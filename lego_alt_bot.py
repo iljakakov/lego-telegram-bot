@@ -20,21 +20,16 @@ from telegram.ext import (
     filters,
 )
 
-# ==========================
-# CONFIG
-# ==========================
 BASE_URL = "https://rebrickable.com/api/v3"
-PAGE_SIZE_API = 50          # сколько получать из API за раз
-PAGE_SIZE_UI = 5            # сколько показывать на одной странице
-PREFS_FILE = "user_prefs.json"  # язык пользователя (простая локальная память)
+PAGE_SIZE_API = 50         
+PAGE_SIZE_UI = 5           
+PREFS_FILE = "user_prefs.json"  
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 REBRICKABLE_API_KEY = os.getenv("REBRICKABLE_API_KEY", "").strip()
 
 
-# ==========================
-# I18N (RU/EN)
-# ==========================
+
 TEXTS = {
     "ru": {
         "start_title": "🧱 *LEGO Alternate Models Bot*",
@@ -117,9 +112,7 @@ TEXTS = {
 }
 
 
-# ==========================
-# Simple user prefs (language)
-# ==========================
+
 def load_prefs() -> Dict[str, Any]:
     try:
         with open(PREFS_FILE, "r", encoding="utf-8") as f:
@@ -155,9 +148,7 @@ def t(user_id: int, key: str) -> str:
     return TEXTS[lang][key]
 
 
-# ==========================
-# Rebrickable API
-# ==========================
+
 def fetch_alternates(set_num: str, page_size: int = PAGE_SIZE_API) -> List[Dict[str, Any]]:
     url = f"{BASE_URL}/lego/sets/{urllib.parse.quote(set_num)}/alternates/?page_size={page_size}"
     req = urllib.request.Request(url, headers={"Authorization": f"key {REBRICKABLE_API_KEY}"})
@@ -171,16 +162,14 @@ def normalize_set_num(raw: str) -> str:
 
 
 def looks_like_set_num(s: str) -> bool:
-    # простая проверка: нужен дефис и что-то после него
+    
     if "-" not in s:
         return False
     left, right = s.split("-", 1)
     return left.isdigit() and right.isdigit()
 
 
-# ==========================
-# UI rendering
-# ==========================
+
 def format_page(
     user_id: int,
     set_num: str,
@@ -213,7 +202,7 @@ def format_page(
             f"{instr}\n"
             f"{url}"
         )
-        lines.append("")  # пустая строка между карточками
+        lines.append("")  
 
     return "\n".join(lines).strip()
 
@@ -261,9 +250,7 @@ def build_lang_keyboard(user_id: int) -> InlineKeyboardMarkup:
     )
 
 
-# ==========================
-# Handlers
-# ==========================
+
 async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if not BOT_TOKEN or not REBRICKABLE_API_KEY:
@@ -330,7 +317,6 @@ async def run_search_and_show(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(t(user_id, "not_found").format(set_num=set_num), parse_mode=ParseMode.MARKDOWN)
         return
 
-    # по умолчанию показываем все, но запомним фильтр
     context.user_data["set_num"] = set_num
     context.user_data["all_models"] = models
     context.user_data["pdf_only"] = False
@@ -355,7 +341,6 @@ async def show_current_page(update: Update, context: ContextTypes.DEFAULT_TYPE, 
 
     models = apply_filter(all_models, pdf_only)
     if not models:
-        # если включили PDF-only и стало пусто
         await (update.callback_query.message.edit_text if edit else update.effective_message.reply_text)(
             t(user_id, "not_found").format(set_num=set_num),
             parse_mode=ParseMode.MARKDOWN,
@@ -392,29 +377,24 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     data = query.data or ""
 
-    # Language menu
     if data == "lang:menu":
         await query.message.reply_text("Choose / Выбери:", reply_markup=build_lang_keyboard(user_id))
         return
 
-    # Set language
     if data.startswith("lang:set:"):
         lang = data.split(":")[-1]
         set_lang(user_id, lang)
         msg = TEXTS[lang]["lang_changed_ru"] if lang == "ru" else TEXTS[lang]["lang_changed_en"]
         await query.message.reply_text(msg)
-        # показать старт-меню уже на новом языке
         text = f"{t(user_id, 'start_title')}\n\n{t(user_id, 'start_body')}"
         await query.message.reply_text(text, parse_mode=ParseMode.MARKDOWN, reply_markup=build_start_keyboard(user_id))
         return
 
-    # Start search button
     if data == "start:search":
         context.user_data["awaiting_set"] = True
         await query.message.reply_text(t(user_id, "ask_set"), parse_mode=ParseMode.MARKDOWN)
         return
 
-    # Navigation/filter requires having a search context
     if "all_models" not in context.user_data:
         await query.message.reply_text(t(user_id, "help"))
         return
@@ -436,16 +416,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
 
-# ==========================
-# MAIN
-# ==========================
+
 def main():
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN is missing. Set it as environment variable BOT_TOKEN.")
     if not REBRICKABLE_API_KEY:
         raise RuntimeError("REBRICKABLE_API_KEY is missing. Set it as environment variable REBRICKABLE_API_KEY.")
 
-    # Fix for some Windows/Python builds: ensure event loop exists
+
     try:
         asyncio.get_running_loop()
     except RuntimeError:
