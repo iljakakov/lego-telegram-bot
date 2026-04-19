@@ -24,9 +24,9 @@ from telegram.ext import (
 # CONFIG
 # ==========================
 BASE_URL = "https://rebrickable.com/api/v3"
-PAGE_SIZE_API = 50          # сколько получать из API за раз
-PAGE_SIZE_UI = 5            # сколько показывать на одной странице
-PREFS_FILE = "user_prefs.json"  # язык пользователя (простая локальная память)
+PAGE_SIZE_API = 50         
+PAGE_SIZE_UI = 5           
+PREFS_FILE = "user_prefs.json" 
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 REBRICKABLE_API_KEY = os.getenv("REBRICKABLE_API_KEY", "").strip()
@@ -213,7 +213,7 @@ def format_page(
             f"{instr}\n"
             f"{url}"
         )
-        lines.append("")  # пустая строка между карточками
+        lines.append("")  
 
     return "\n".join(lines).strip()
 
